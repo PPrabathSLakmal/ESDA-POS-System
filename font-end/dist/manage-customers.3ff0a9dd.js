@@ -583,6 +583,7 @@ const btnSave = $("#btn-save-customer");
 const btnNewCustomer = $("#btn-new-customer");
 const tbodyElm = $("tbody");
 const txtSearchElm = $("#txt-search-customer");
+const modalFootElm = $("#modal-foot");
 const allCustomerQuery = "";
 let customerList = [];
 const customerDetails = [
@@ -604,32 +605,64 @@ customerDetails.forEach((txt)=>{
 getAllCustomers(allCustomerQuery);
 btnSave.on("click", ()=>{
     if (!isValid()) return false;
-    const customerJson = JSON.stringify({
-        name: txtNameElm.val().trim(),
-        address: txtAddressElm.val().trim(),
-        contact: txtContactElm.val().trim()
-    });
-    const jqxhr = $.ajax(`${REST_API_URL}/customers`, {
-        method: "POST",
-        contentType: "application/json",
-        data: customerJson
-    });
-    jqxhr.done(()=>{
-        resetForm("clearData");
-        getAllCustomers(allCustomerQuery);
-    });
-    jqxhr.fail(()=>{});
+    if (btnSave.text() === "New Customer") {
+        const customerJson = JSON.stringify({
+            name: txtNameElm.val().trim(),
+            address: txtAddressElm.val().trim(),
+            contact: txtContactElm.val().trim()
+        });
+        const jqxhr = $.ajax(`${REST_API_URL}/customers`, {
+            method: "POST",
+            contentType: "application/json",
+            data: customerJson
+        });
+        jqxhr.done(()=>{
+            resetForm("clearData");
+            getAllCustomers(allCustomerQuery);
+        });
+        jqxhr.fail(()=>{});
+    } else if (btnSave.text() === "Update Customer") {
+        const updatedCustomer = JSON.stringify({
+            name: txtNameElm.val().trim(),
+            address: txtAddressElm.val().trim(),
+            contact: txtContactElm.val().trim()
+        });
+        const jqxhr1 = $.ajax(`${REST_API_URL}/customers/${txtIdElm.val().trim()}`, {
+            method: "PATCH",
+            contentType: "application/json",
+            data: updatedCustomer
+        });
+        jqxhr1.done(()=>{
+            resetForm("clearData");
+            updateCustomer(allCustomerQuery);
+        });
+    }
 });
 txtSearchElm.on("input", (eventData)=>{
     getAllCustomers(txtSearchElm.val().trim());
 });
 tbodyElm.on("click", (eventData)=>{
-    if ($(eventData.target).hasClass("delete")) {
-        const customerId = $(eventData.target).parents("tr").children("th").text();
+    const trElm = $(eventData.target).parents("tr");
+    const customerId = trElm.children("th").text();
+    const customerName = trElm.children("td:nth-child(2)").text();
+    const customerAddress = trElm.children("td:nth-child(3)").text();
+    const customerContact = trElm.children("td:nth-child(4)").text();
+    if ($(eventData.target).hasClass("delete")) deleteCustomer(customerId);
+    if ($(eventData.target).hasClass("edit")) {
         console.log(customerId);
-        deleteCustomer(customerId);
+        updateCustomer(customerId, customerName, customerAddress, customerContact);
     }
 });
+function updateCustomer(customerId, customerName, customerAddress, customerContact) {
+    console.log(customerId);
+    console.log(customerName);
+    btnNewCustomer.trigger("click");
+    txtIdElm.val(`${customerId}`);
+    txtNameElm.val(`${customerName}`);
+    txtAddressElm.val(`${customerAddress}`);
+    txtContactElm.val(`${customerContact}`);
+    btnSave.text("Update Customer");
+}
 function deleteCustomer(customerId) {
     const jqxhr = $.ajax(`${REST_API_URL}/customers?id=${customerId}`, {
         method: "DELETE",
